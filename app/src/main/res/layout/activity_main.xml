@@ -10,6 +10,7 @@
     <GridLayout
         android:id="@+id/opponentHand"
         android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:columnCount="9"
@@ -24,19 +25,19 @@
         android:layout_alignParentRight="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:columnCount="6"
-        android:rowCount="3">
+        android:columnCount="6">
 
     </GridLayout>
 
-    <Button
+    <ImageView
         android:id="@+id/button"
         android:layout_centerInParent="true"
         android:layout_alignParentLeft="true"
+        android:background="@drawable/cardback"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Start"
-        android:onClick="startGame"
+        android:onClick="setGameStart"
         />
 
     <GridLayout

@@ -28,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
     private GridLayout field;
     private int[] fieldV;
     private HashMap<ImageView, Integer> test;
+    private boolean pTurn;
+    private boolean gameStart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
         enemyV = new int[9];
         fieldV = new int[9];
         test = new HashMap<ImageView, Integer>();
+        pTurn = true;
+        gameStart = false;
 
         cards = new ArrayList<String>();
         rand = new Random();
@@ -98,20 +102,39 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * This method takes the (ImageView) v from the player's hand and puts it into the middle if
+     * it is the player's turn.
+     * @param v = the imageview/card that was clicked
+     */
     public void imagePressed(View v) {
         GridLayout g = (GridLayout) v.getParent();
-        if(!g.equals(field)) {
+        if(gameStart && pTurn && g.equals(playerHand)) {
+            pTurn = false;
             g.removeView(v); //removes the card from whomever's hand.
-            field.addView(v); //adds it to the middle -- ERRORs occasionally for some reason:  IllegalArgumentException column indices (start + span) mustn't exceed the column count.
 
-            int x = test.get(v);
-            Toast.makeText(this, "The value of this view was " + x, Toast.LENGTH_LONG).show();
-            updateGame();
+            ImageView temp = (ImageView) getLayoutInflater().inflate(R.layout.image_layout, field, false);
+            temp.setImageDrawable(((ImageView) v).getDrawable());
+            field.addView(temp); // adds the card to the middle/field
+
+            int x = test.get(v); // gives us the value of the card that we put into the middle
+            updateGame(x);
         }
     }
 
-    public void updateGame() {
+    /**
+     * The method should first update the result of the playerTurn.
+     * This method performs the opponent's turn. If the opponent is unable to proceed or both are
+     * out of cards, the game ends by declaring the winner.
+     * @param x = the value of the card that was played by the player.
+     */
+    public void updateGame(int x) {
 
+    }
+
+    public void setGameStart(View v) {
+        ((ImageView) v).setImageDrawable(getResources().getDrawable(R.drawable.start));
+        gameStart = true;
     }
 
 }
