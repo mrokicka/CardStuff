@@ -66,7 +66,10 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Bad assets!", Toast.LENGTH_LONG).show();
         }
 
+        loadCards();
+    }
 
+    public void loadCards() {
         Random r = new Random();
         try {
             for(int i = 0; i < 9; i++) {
@@ -101,10 +104,7 @@ public class MainActivity extends AppCompatActivity {
         } catch(IOException e) {
             Toast.makeText(this, "Assets file does not exist.", Toast.LENGTH_LONG).show();
         }
-
-
     }
-
     /**
      * This method takes the (ImageView) v from the player's hand and puts it into the middle if
      * it is the player's turn.
@@ -114,16 +114,28 @@ public class MainActivity extends AppCompatActivity {
         GridLayout g = (GridLayout) v.getParent();
         if(gameStart && pTurn && g.equals(playerHand)) {
             pTurn = false;
-            g.removeView(v); //removes the card from whomever's hand.
+            int x;
+            if(test.get(v) == 11) {
+                cardEleven(g, (ImageView) v);
+                x = 0;
+            } else if(test.get(v) == 12) {
+                cardTwelve(g, (ImageView) v);
+                x = 0;
+            } else if(test.get(v) == 13) {
+                cardThirteen(g, (ImageView) v);
+                x = 0;
+            } else {
+                g.removeView(v); //removes the card from whomever's hand.
 
-            ImageView temp = (ImageView) getLayoutInflater().inflate(R.layout.image_layout, field, false);
-            temp.setImageDrawable(((ImageView) v).getDrawable());
-            field.addView(temp); // adds the card to the middle/field
+                ImageView temp = (ImageView) getLayoutInflater().inflate(R.layout.image_layout, field, false);
+                temp.setImageDrawable(((ImageView) v).getDrawable());
+                field.addView(temp); // adds the card to the middle/field
 
-            test.put(temp, test.get(v));
-            test.remove(v);
+                test.put(temp, test.get(v));
+                test.remove(v);
 
-            int x = test.get(temp);
+                x = test.get(temp);
+            }
             updateGame(x);
         }
     }
@@ -134,41 +146,33 @@ public class MainActivity extends AppCompatActivity {
      * out of cards, the game ends by declaring the winner.
      */
     public void updateGame(int x) {
-
-
-        playerPoints.setText(getValue(field) + "");
         boolean playable = false;
 
         for(int i = 0; i < enemyHand.getChildCount(); i++) {
             int temp = test.get(enemyHand.getChildAt(i));
-            if(temp == 11) {
-                temp = 0;
-                /*
-                cardEleven();
+            if(temp == 11 && x >= 8) { // play the jack to get rid of their card
+                cardEleven(enemyHand, (ImageView) enemyHand.getChildAt(i));
                 pTurn = true;
                 playerPoints.setText(getValue(field) + "");
+                playable = true;
                 break;
-                */
-            } else if(temp == 12) {
-                temp = 0;
-                /*
-                cardTwelve();
-                pTurn = true;
-                playerPoints.setText(getValue(field) + "");
-                enemyPoints.setText(getValue(enemyField) + "");
-                break;
-                */
-            } else if(temp == 13) {
-                temp = 0;
-                /*
-                cardThirteen();
-                pTurn = true;
-                enemyPoints.setText(getValue(enemyField) + "");
-                break;
-                */
-            }
 
-            if(temp + getValue(enemyField) >= getValue(field)) {
+            } else if(temp == 12 && x >= 8 && test.get(enemyField.getChildAt(enemyField.getChildCount() - 1)) <= 5) { // Play the queen and swap cards.
+                cardTwelve(enemyHand, (ImageView) enemyHand.getChildAt(i));
+                pTurn = true;
+                playerPoints.setText(getValue(field) + "");
+                enemyPoints.setText(getValue(enemyField) + "");
+                playable = true;
+                break;
+
+            } else if(temp == 13 && test.get(enemyField.getChildAt(enemyField.getChildCount() - 1)) >= 8) { // play the king and repeat your previous card.
+                cardThirteen(enemyHand, (ImageView) enemyHand.getChildAt(i));
+                pTurn = true;
+                enemyPoints.setText(getValue(enemyField) + "");
+                playable = true;
+                break;
+
+            } else if(temp <= 10 && temp + getValue(enemyField) >= getValue(field)) { //out of the numeric cards, will play a card if you can beat player score.
                 ImageView imageview = (ImageView) getLayoutInflater().inflate(R.layout.image_layout, enemyField, false);
 
                 imageview.setImageDrawable(((ImageView) enemyHand.getChildAt(i)).getDrawable());
@@ -181,15 +185,43 @@ public class MainActivity extends AppCompatActivity {
                 pTurn = true;
                 playable = true;
 
-                enemyPoints.setText(getValue(enemyField) + "");
                 break;
             }
         }
 
+        /**
+         * We left the loop which means there are no numerical cards that can win against the oponent's
+         * value, but we might still have royal cards so...
+         */
+
         if(!playable) {
-            Toast.makeText(this, "PLAYER WINS!", Toast.LENGTH_LONG).show();
+            for(int i = 0; i < enemyHand.getChildCount(); i++) {
+                int temp = test.get(enemyHand.getChildAt(i));
+                if(temp == 11) {
+                    cardEleven(enemyHand, (ImageView) enemyHand.getChildAt(i));
+                } else if(temp == 12) {
+                    cardTwelve(enemyHand, (ImageView) enemyHand.getChildAt(i));
+                } else {
+                    cardThirteen(enemyHand, (ImageView) enemyHand.getChildAt(i));
+                }
+                playable = true;
+                break;
+            }
         }
 
+        /**
+         * If we reach here then we have no numerical cards that can win and no royal cards to
+         * manipulate anything, so it's a loss.
+         */
+
+        if(!playable) {
+            Toast.makeText(this, "PLAYER WINS!", Toast.LENGTH_LONG).show();
+
+            // resetGame();
+        }
+
+        enemyPoints.setText(getValue(enemyField) + "");
+        playerPoints.setText(getValue(field) + "");
 
     }
 
@@ -279,6 +311,75 @@ public class MainActivity extends AppCompatActivity {
         return value;
     }
 
+    /**
+     * This method removes the card from the hand of the person who used it, g is that person's hand, and
+     * then removes the most recently played card of the other guy.
+     * @param g the gridlayout that corresponds to the hand that played this card
+     * @param v the actual card so that I can easily remove it from g.
+     */
+    public void cardEleven(GridLayout g, ImageView v) {
+        g.removeView(v);
+        if(g.equals(enemyHand))
+            field.removeView(field.getChildAt(field.getChildCount() - 1));
+        else
+            enemyField.removeView(enemyField.getChildAt(enemyField.getChildCount() - 1));
+    }
+
+    /**
+     * This method swaps the most recently played card from both fields.
+     * @param g the hand that played the card
+     * @param v the card that was played
+     */
+    public void cardTwelve(GridLayout g, ImageView v) { //causes error. getValue points to a null object apparently.
+        g.removeView(v);
+
+        ImageView temp1 = (ImageView) getLayoutInflater().inflate(R.layout.image_layout, enemyField, false);
+        ImageView temp2 = (ImageView) getLayoutInflater().inflate(R.layout.image_layout, field, false);
+
+        //The imageviews to add
+        test.put(temp1, test.get(field.getChildAt(field.getChildCount() - 1)));
+        test.put(temp2, test.get(enemyField.getChildAt(field.getChildCount() - 1)));
+
+        temp1.setImageDrawable(((ImageView) field.getChildAt(field.getChildCount() - 1)).getDrawable());
+        temp2.setImageDrawable(((ImageView) enemyField.getChildAt(enemyField.getChildCount() - 1)).getDrawable());
+
+        //remove the imageviews that are already there.
+        field.removeView(field.getChildAt(field.getChildCount() - 1));
+        enemyField.removeView(enemyField.getChildAt(enemyField.getChildCount() - 1));
+
+        test.remove(field.getChildAt(field.getChildCount() - 1));
+        test.remove(enemyField.getChildAt(field.getChildCount() - 1));
+
+        //add the views
+        field.addView(temp2);
+        enemyField.addView(temp1);
+    }
+
+    public void cardThirteen(GridLayout g, ImageView v) {
+        g.removeView(v);
+
+        String tempCard;
+        if(g.equals(enemyHand))
+            tempCard = test.get(enemyField.getChildAt(enemyField.getChildCount() - 1)) + "c.png";
+        else
+            tempCard = test.get(field.getChildAt(field.getChildCount() - 1)) + "c.png";
+
+        ImageView imageview = (ImageView) getLayoutInflater().inflate(R.layout.image_layout, g, false);
+
+        try {
+            imageview.setImageBitmap(BitmapFactory.decodeStream(getAssets().open("playingCards/" + tempCard)));
+        } catch(IOException e) {
+            Toast.makeText(this, "King method failed!", Toast.LENGTH_LONG).show();
+        }
+
+        if(g.equals(enemyHand))
+            enemyField.addView(imageview);
+        else
+            field.addView(imageview);
+
+        test.put(imageview, test.get(enemyField.getChildAt(enemyField.getChildCount() - 1)));
+        test.remove(v);
+    }
 
     /**
      * Consider using the TextViews to keep track of the points for the fields instead of having to
